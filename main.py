@@ -67,11 +67,10 @@ def get_weather_forecast():
     output_to_file('max temp for the day is {0}'.format(mtemp))
     return mtemp
 
-def get_greeting():
-    res = urequests.get("https://micro-gardener.herokuapp.com/api/greeting")
-    print(res.text)
+def get_timer():
+    res = urequests.get("https://micro-gardener.herokuapp.com/api/timer")
     json = ujson.loads(res.text)
-    print(json)
+    return json
     
 def run_pump(t):
     '''
@@ -116,53 +115,38 @@ def water_the_plants(mtemp):
         run_pump(t=1200)        
     
 
-## main   
-# connect to wifi
-# create station interface
-try:
-    wlan = network.WLAN(network.STA_IF)
-    wlan.ifconfig(('192.168.0.31', '255.255.255.0', '192.168.0.1', '192.168.0.1'))
-    wlan_connect()
+##main
+wlan = network.WLAN(network.STA_IF)
+wlan_connect()
+
+timerId = "61827c2a88a566531db00eb3"
+
+while True:
+
+    timerModel = get_timer()
+
+    print(timerModel["id"], timerModel["timerDuration"])
     
-    # get greeting
-    get_greeting()
-
-    # set rtc to current datetime
-    output_to_file('set RTC')
-    rtc = machine.RTC()
-    set_datetime()
-
-    # get current hourly time
-    th = rtc.datetime()[4]
-    # time schedule
-    if th == 4:
-        # get max temp for current day and water the plants
-        mtemp = get_weather_forecast()
-        water_the_plants(mtemp)
-        if mtemp > 30:
-            wlan_disconnect()
-            sleep_until(16)
-        else:
-            wlan_disconnect()
-            sleep_until(4)
-    elif th == 16:
-        # get max temp for current day and water the plants
-        mtemp = get_weather_forecast()
-        if mtemp > 30:
-            water_the_plants(mtemp)
-            wlan_disconnect()
-            sleep_until(4)
-        else:
-            wlan_disconnect()
-            sleep_until(4)
-    elif th > 4 and th < 16:
-        wlan_disconnect()
-        sleep_until(16)
+    if timerModel["id"] != timerId:
+        timerId = timerModel["id"]
+        run_pump(float(timerModel["timerDuration"]) * 60)
+    
     else:
-        wlan_disconnect()
-        sleep_until(4)
-except Exception as e:
-    f = open('data.txt', 'w')
-    sys.print_exception(e, f)
-    f.close()
-    machine.deepsleep(h_to_ms(1))
+        utime.sleep(1)
+        print("sleep")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
