@@ -8,9 +8,10 @@ import ujson
 import machine
 import utime
 import sys
+import os
 
 from machine import Pin
-from credentials import ssid, pw, appid
+from creds import ssid, pw, appid
 
 def output_to_file(output):
     print(output)
@@ -79,7 +80,14 @@ def run_pump(t):
     output_to_file('run pump for {0} seconds'.format(t))
     p5 = Pin(5, Pin.OUT)
     p5.value(1)
-    utime.sleep(t)
+    
+    deadline = utime.ticks_add(utime.ticks_ms(), (int)(t * 1000))
+    while utime.ticks_diff(deadline, utime.ticks_ms()) > 0:
+        if get_timer()["stopPump"]:
+            break
+        else:
+            utime.sleep(1)
+
     p5.value(0)
     
 def min_to_ms(t):
@@ -119,21 +127,20 @@ def water_the_plants(mtemp):
 wlan = network.WLAN(network.STA_IF)
 wlan_connect()
 
-timerId = "61827c2a88a566531db00eb3"
 
 while True:
-
-    timerModel = get_timer()
-
-    print(timerModel["id"], timerModel["timerDuration"])
     
-    if timerModel["id"] != timerId:
-        timerId = timerModel["id"]
-        run_pump(float(timerModel["timerDuration"]) * 60)
+    pumpTimer = get_timer()
+    print(pumpTimer)
     
+    if not pumpTimer["done"]:
+        run_pump(pumpTimer["minutes"] * 60)
+        
     else:
         utime.sleep(1)
         print("sleep")
+
+    
 
 
 
